@@ -1,0 +1,157 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"x-extension": true,
+	"title": "ファイルデータ",
+	"description": "ファイルの内容や形式に対する検証ルール。`schema` の値で定義を振り分ける",
+	"required": ["schema"],
+	"unevaluatedProperties": false,
+	"properties": {
+		"schema": {
+			"title": "データ検証スキーマ種別",
+			"description": "ファイル内容をテキストとして検証するか、JSON として検証するか、YAML として検証するか、バイナリとして検証するかを指定する識別子",
+			"enum": ["text", "json", "yaml", "binary"]
+		}
+	},
+	"allOf": [
+		{
+			"if": {
+				"required": ["schema"],
+				"properties": { "schema": { "const": "text" } }
+			},
+			"then": { "$ref": "#/$defs/text-data" }
+		},
+		{
+			"if": {
+				"required": ["schema"],
+				"properties": { "schema": { "const": "json" } }
+			},
+			"then": { "$ref": "#/$defs/json-data" }
+		},
+		{
+			"if": {
+				"required": ["schema"],
+				"properties": { "schema": { "const": "yaml" } }
+			},
+			"then": { "$ref": "#/$defs/yaml-data" }
+		},
+		{
+			"if": {
+				"required": ["schema"],
+				"properties": { "schema": { "const": "binary" } }
+			},
+			"then": { "$ref": "#/$defs/binary-data" }
+		}
+	],
+	"$defs": {
+		"text-data": {
+			"title": "テキストファイル定義",
+			"description": "ファイル内容(文字列)に対する制約。`schema` と行数系プロパティ(`lines` / `minLines` / `maxLines`)以外のプロパティは `string-schema` に従います(完全一致は `const`、前方一致や正規表現は `pattern`)。複数指定した場合はすべてを満たす必要があります(AND)。行数の数え方: 改行は LF・CRLF・CR のいずれも1つの行終端として扱い、末尾の行終端の後ろに空行は生じない(`a\\nb\\n` も `a\\nb` も2行)。空ファイルは0行",
+			"type": "object",
+			"unevaluatedProperties": false,
+			"x-extension": true,
+			"properties": {
+				"schema": {
+					"title": "スキーマ種別 (テキスト)",
+					"description": "テキストデータとしての検証を指定",
+					"const": "text"
+				},
+				"lines": {
+					"type": "integer",
+					"minimum": 0,
+					"title": "行数(完全一致)",
+					"description": "ファイルの行数がこの値と一致すること。数え方は `text-data` の description を参照"
+				},
+				"minLines": {
+					"type": "integer",
+					"minimum": 0,
+					"default": 0,
+					"title": "行数の下限",
+					"description": "ファイルの行数がこの値以上であること"
+				},
+				"maxLines": {
+					"type": "integer",
+					"minimum": 0,
+					"title": "行数の上限",
+					"description": "ファイルの行数がこの値以下であること"
+				}
+			},
+			"allOf": [{ "$ref": "#/$defs/string-schema" }]
+		},
+		"binary-data": {
+			"title": "バイナリファイル定義",
+			"description": "画像やアーカイブなどのバイナリファイルに対する検証ルール",
+			"type": "object",
+			"unevaluatedProperties": false,
+			"x-extension": true,
+			"properties": {
+				"schema": { "const": "binary" },
+				"contentMediaType": {
+					"type": "string",
+					"title": "MIMEタイプ",
+					"description": "期待するファイルのMIMEタイプ(例: image/png)。ツール側で拡張子検証や、既知のマジックバイト検証のヒントとして利用可能"
+				},
+				"magic-bytes": {
+					"type": "string",
+					"pattern": "^[0-9a-fA-F]{2}( [0-9a-fA-F]{2})*$",
+					"title": "マジックバイト (16進数)",
+					"description": "ファイルの先頭がこのバイト列から始まることを検証します(例: '89 50 4e 47')"
+				}
+			}
+		},
+		"json-data-body": {
+			"$comment": "json-data と yaml-data が共有するプロパティ定義。json-data を直接 $ref すると schema の const: json が yaml と衝突するため、schema を除いた本体をここに切り出している。",
+			"title": "JSON / YAML 共通のデータ制約",
+			"description": "パース後のデータに対する制約。`const-properties` / `contains-properties` はトップレベルがオブジェクトの場合のプロパティに対する制約、`json-schema` はデータ全体に対する JSON Schema。トップレベルが配列などオブジェクト以外のとき(YAML のマルチドキュメントを含む)は `json-schema` を使う",
+			"type": "object",
+			"x-extension": true,
+			"properties": {
+				"const-properties": {
+					"type": "object",
+					"title": "完全プロパティ定義",
+					"description": "データのトップレベルが、ここで指定したオブジェクトリテラルと完全に一致する(キーと値の過不足がない)ことを要求します。値はJSON Schemaではなく期待する実データを直接記述します"
+				},
+				"contains-properties": {
+					"type": "object",
+					"title": "部分プロパティ定義",
+					"description": "データのトップレベルに、ここで指定したオブジェクトリテラルのプロパティが存在し、その値も完全に一致することを要求します。値はJSON Schemaではなく期待する実データを直接記述します。指定していないプロパティは不問です"
+				},
+				"json-schema": {
+					"$ref": "https://json-schema.org/draft/2020-12/schema",
+					"title": "JSON Schema による検証",
+					"description": "データ全体に適用するJSON Schema(JSON Schema 2020-12 のメタスキーマに従う)"
+				}
+			}
+		},
+		"json-data": {
+			"title": "JSONファイル定義",
+			"description": "JSONファイルの内容に対する制約。指定できるプロパティは `json-data-body` を参照",
+			"type": "object",
+			"unevaluatedProperties": false,
+			"x-extension": true,
+			"properties": {
+				"schema": {
+					"title": "スキーマ種別 (JSON)",
+					"description": "JSONデータとしての検証を指定",
+					"const": "json"
+				}
+			},
+			"allOf": [{ "$ref": "#/$defs/json-data-body" }]
+		},
+		"yaml-data": {
+			"title": "YAMLファイル定義",
+			"description": "YAMLファイルの内容に対する制約。パース後のデータを JSON と同じデータモデルとして扱い、指定できるプロパティは `json-data` と同じ(`json-data-body`)。YAML を読み込んだ結果がマルチドキュメントストリーム(`---` 区切りの複数ドキュメント)ならば、各ドキュメントを要素とする JSON 配列として扱う。そうでなければ単一ドキュメントをそのまま解釈する(最外がオブジェクトの場合もあり、単一ドキュメントがトップレベルの配列である場合は配列そのもの)。【検証スキーマの指定】YAML 内の `# yaml-language-server: $schema=/path/to/stream.schema.json` 形式のディレクティブによる検証スキーマ指定は、データの `$schema` プロパティに設定されたものとして扱う。同様の意味を持つ一般的なディレクティブ(`yaml-language-server` と `$schema`)は自動で相互に変換し、併用も可能。ただし両者の指定が衝突した場合は error を返す",
+			"type": "object",
+			"unevaluatedProperties": false,
+			"x-extension": true,
+			"properties": {
+				"schema": {
+					"title": "スキーマ種別 (YAML)",
+					"description": "YAMLデータとしての検証を指定",
+					"const": "yaml"
+				}
+			},
+			"allOf": [{ "$ref": "#/$defs/json-data-body" }]
+		}
+	}
+}
