@@ -1,61 +1,193 @@
 {
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"type": "object",
-	"x-extension": true,
+	"$comment": "【方針】プロパティ名と意味は Frictionless Data (Data Resource v2) に準拠する。ファイル内容の検証に関係する format / mediatype / encoding / dialect / schema は Frictionless 側の定義を $ref で参照し、Frictionless に存在しないプロパティだけを拡張プロパティ(x-extension: true)として追加する。name / path / data / bytes / hash などはファイルノード側(directory.schema.json の common)が持つ情報と重複するため含めない。【x-extension】x-extension: true を持つスキーマの内側のプロパティが拡張プロパティ。$ref を介した参照先には効かないため、参照先のスキーマ自身に付けている。Frictionless 由来のプロパティ(format / mediatype / encoding / dialect / schema)を持つスキーマには付けない。【format の拡張値】Frictionless の format は任意の文字列(csv / xls / json などの例示のみ)で、テキスト・バイナリを表す指定は存在しない。そのため `text`(`txt`)と `binary` は本スキーマ独自の値(拡張)として扱う。【参照先】Frictionless 側のスキーマは https://datapackage.org/profiles/2.0/dataresource.json の properties を JSON Pointer で参照する(ローカルに置いたコピーに差し替えてもよい)。Frictionless の profile は draft-07 のため、検証ツールでは異なる方言の混在を許可する設定が必要になる。",
 	"title": "ファイルデータ",
-	"description": "ファイルの内容や形式に対する検証ルール。`schema` の値で定義を振り分ける",
-	"required": ["schema"],
-	"unevaluatedProperties": false,
-	"properties": {
-		"schema": {
-			"title": "データ検証スキーマ種別",
-			"description": "ファイル内容をテキストとして検証するか、JSON として検証するか、YAML として検証するか、バイナリとして検証するかを指定する識別子",
-			"enum": ["text", "json", "yaml", "binary"]
-		}
-	},
-	"allOf": [
-		{
-			"if": {
-				"required": ["schema"],
-				"properties": { "schema": { "const": "text" } }
-			},
-			"then": { "$ref": "#/$defs/text-data" }
-		},
-		{
-			"if": {
-				"required": ["schema"],
-				"properties": { "schema": { "const": "json" } }
-			},
-			"then": { "$ref": "#/$defs/json-data" }
-		},
-		{
-			"if": {
-				"required": ["schema"],
-				"properties": { "schema": { "const": "yaml" } }
-			},
-			"then": { "$ref": "#/$defs/yaml-data" }
-		},
-		{
-			"if": {
-				"required": ["schema"],
-				"properties": { "schema": { "const": "binary" } }
-			},
-			"then": { "$ref": "#/$defs/binary-data" }
-		}
-	],
+	"description": "ファイルの内容や形式に対する検証ルール。`format` または `mediatype` が明示されている場合は、その種別に対応する制約プロパティが使えるように分岐する。詳細は `file-data` を参照",
+	"$ref": "#/$defs/file-data",
 	"$defs": {
-		"text-data": {
-			"title": "テキストファイル定義",
-			"description": "ファイル内容(文字列)に対する制約。`schema` と行数系プロパティ(`lines` / `minLines` / `maxLines`)以外のプロパティは `string-schema` に従います(完全一致は `const`、前方一致や正規表現は `pattern`)。複数指定した場合はすべてを満たす必要があります(AND)。行数の数え方: 改行は LF・CRLF・CR のいずれも1つの行終端として扱い、末尾の行終端の後ろに空行は生じない(`a\\nb\\n` も `a\\nb` も2行)。空ファイルは0行",
+		"file-data": {
+			"$comment": "if / then は allOf の要素に置く。直下に置くと、Ajv で unevaluatedProperties が if 不成立時に allOf 由来のプロパティを未評価と誤判定するため(仕様上は同じ意味)。unevaluatedProperties: false はここ1か所にだけ置く(種別ごとの定義側に置くと、ここで評価した format / mediatype / encoding を未評価と誤判定するため)。",
+			"title": "ファイルデータ定義",
+			"description": "ファイル内容の検証ルール。`format` / `mediatype` / `encoding` は全種別で指定できる(Frictionless 準拠)。`format` または `mediatype` が次のいずれかに該当すると、その種別の制約プロパティが追加で使える。複数の種別に該当した場合は、それぞれの制約をすべて満たす必要がある(AND)。どの種別にも該当しない場合(どちらも未指定を含む)は、`format` / `mediatype` / `encoding` 以外のプロパティは指定できない。【text】format が `text` / `txt`、または mediatype が `text/*`(csv・tsv・yaml を除く)→ `text-data`。【json】format が `json`、または mediatype が `application/json` / `application/*+json` → `json-data`。【yaml】format が `yaml` / `yml`、または mediatype が `application/yaml` / `application/x-yaml` / `text/yaml` / `text/x-yaml` / `application/*+yaml` → `yaml-data`。【表形式】format が `csv` / `tsv`、または mediatype が `text/csv` / `text/tab-separated-values` → `tabular-data`。【binary】format が `binary`、または mediatype が `image/*`(`image/svg+xml` を除く)/ `audio/*` / `video/*` / `font/*` / `application/octet-stream` / `application/zip` / `application/gzip` / `application/pdf` / `application/x-tar` → `binary-data`。format・mediatype の値は小文字で記述する(判定は大文字小文字を区別する)",
 			"type": "object",
 			"unevaluatedProperties": false,
+			"properties": {
+				"format": {
+					"$ref": "https://datapackage.org/profiles/2.0/dataresource.json#/properties/format",
+					"description": "ファイルの形式(Frictionless の `format` に準拠)。`text`(`txt`)と `binary` は Frictionless に対応する指定がないため、本スキーマ独自の拡張値。指定した値に応じて使える制約プロパティが変わる(`file-data` を参照)",
+					"examples": ["text", "json", "yaml", "csv", "binary"]
+				},
+				"mediatype": {
+					"$ref": "https://datapackage.org/profiles/2.0/dataresource.json#/properties/mediatype",
+					"description": "ファイルのメディアタイプ(Frictionless の `mediatype` に準拠。IANA 登録のもの、例: `image/png`)。`format` が未指定でも、この値から種別が判定される(`file-data` を参照)"
+				},
+				"encoding": {
+					"$ref": "https://datapackage.org/profiles/2.0/dataresource.json#/properties/encoding",
+					"description": "ファイルの文字エンコーディング(Frictionless の `encoding` に準拠。デフォルトは `utf-8`)。内容を文字列として検証する種別(text / json / yaml / 表形式)では、この値でデコードした結果に対して検証する。`binary` 種別では指定できない"
+				}
+			},
+			"allOf": [
+				{
+					"if": { "$ref": "#/$defs/applies-text" },
+					"then": { "$ref": "#/$defs/text-data" }
+				},
+				{
+					"if": { "$ref": "#/$defs/applies-json" },
+					"then": { "$ref": "#/$defs/json-data" }
+				},
+				{
+					"if": { "$ref": "#/$defs/applies-yaml" },
+					"then": { "$ref": "#/$defs/yaml-data" }
+				},
+				{
+					"if": { "$ref": "#/$defs/applies-tabular" },
+					"then": { "$ref": "#/$defs/tabular-data" }
+				},
+				{
+					"if": { "$ref": "#/$defs/applies-binary" },
+					"then": {
+						"$comment": "バイナリは文字エンコーディングを持たない。拡張プロパティではない encoding の禁止はここに置く(binary-data は x-extension のため)。",
+						"properties": { "encoding": false },
+						"$ref": "#/$defs/binary-data"
+					}
+				}
+			]
+		},
+		"applies-text": {
+			"$comment": "pattern は大文字小文字を区別するため小文字前提。`; charset=utf-8` のようなパラメータは許容する。text/* のうち csv・tsv・yaml は専用の種別に任せるため先読みで除く。",
+			"title": "テキスト種別の適用条件",
+			"description": "`format` が `text` / `txt`、または `mediatype` が `text/*`(`text/csv` `text/tab-separated-values` `text/yaml` `text/x-yaml` を除く)のとき成立する",
+			"anyOf": [
+				{
+					"required": ["format"],
+					"properties": { "format": { "enum": ["text", "txt"] } }
+				},
+				{
+					"required": ["mediatype"],
+					"properties": {
+						"mediatype": {
+							"pattern": "^text/(?!(?:csv|tab-separated-values|yaml|x-yaml)(?:[;\\s]|$))"
+						}
+					}
+				}
+			]
+		},
+		"applies-json": {
+			"title": "JSON種別の適用条件",
+			"description": "`format` が `json`、または `mediatype` が `application/json` / `application/*+json`(例: `application/geo+json`)のとき成立する",
+			"anyOf": [
+				{
+					"required": ["format"],
+					"properties": { "format": { "enum": ["json"] } }
+				},
+				{
+					"required": ["mediatype"],
+					"properties": {
+						"mediatype": {
+							"pattern": "^application/(?:[^;\\s]+\\+)?json(?:[;\\s]|$)"
+						}
+					}
+				}
+			]
+		},
+		"applies-yaml": {
+			"title": "YAML種別の適用条件",
+			"description": "`format` が `yaml` / `yml`、または `mediatype` が `application/yaml` / `application/x-yaml` / `text/yaml` / `text/x-yaml` / `application/*+yaml` のとき成立する",
+			"anyOf": [
+				{
+					"required": ["format"],
+					"properties": { "format": { "enum": ["yaml", "yml"] } }
+				},
+				{
+					"required": ["mediatype"],
+					"properties": {
+						"mediatype": {
+							"pattern": "^(?:(?:application|text)/(?:x-)?|application/[^;\\s]+\\+)yaml(?:[;\\s]|$)"
+						}
+					}
+				}
+			]
+		},
+		"applies-tabular": {
+			"title": "表形式種別の適用条件",
+			"description": "`format` が `csv` / `tsv`、または `mediatype` が `text/csv` / `text/tab-separated-values` のとき成立する",
+			"anyOf": [
+				{
+					"required": ["format"],
+					"properties": { "format": { "enum": ["csv", "tsv"] } }
+				},
+				{
+					"required": ["mediatype"],
+					"properties": {
+						"mediatype": {
+							"pattern": "^text/(?:csv|tab-separated-values)(?:[;\\s]|$)"
+						}
+					}
+				}
+			]
+		},
+		"applies-binary": {
+			"$comment": "メディアタイプだけでバイナリと断定できるものに限る。それ以外(例: image/svg+xml はテキスト)は format: binary を明示する。",
+			"title": "バイナリ種別の適用条件",
+			"description": "`format` が `binary`、または `mediatype` が `image/*`(`image/svg+xml` を除く)/ `audio/*` / `video/*` / `font/*` / `application/octet-stream` / `application/zip` / `application/gzip` / `application/pdf` / `application/x-tar` のとき成立する",
+			"anyOf": [
+				{
+					"required": ["format"],
+					"properties": { "format": { "enum": ["binary"] } }
+				},
+				{
+					"required": ["mediatype"],
+					"properties": {
+						"mediatype": {
+							"pattern": "^(?:image/(?!svg\\+xml(?:[;\\s]|$))|(?:audio|video|font)/|application/(?:octet-stream|zip|gzip|pdf|x-tar)(?:[;\\s]|$))"
+						}
+					}
+				}
+			]
+		},
+		"string-schema": {
+			"$comment": "文字列に対する制約(JSON Schema 2020-12 で type: string に意味を持つプロパティから抽出)。ファイル内容(文字列)に適用するため値は文字列に限る。format は Frictionless の format(ファイル形式)と衝突し、contentMediaType は mediatype と重複するため除外した。contentEncoding(base64 などの転送エンコーディング)はファイル内容の検証では意味を持たないため除外した。",
+			"title": "文字列スキーマ",
+			"description": "文字列に対する制約。指定した制約はすべて満たす必要がある(AND)",
+			"type": "object",
 			"x-extension": true,
 			"properties": {
-				"schema": {
-					"title": "スキーマ種別 (テキスト)",
-					"description": "テキストデータとしての検証を指定",
-					"const": "text"
+				"const": {
+					"allOf": [
+						{
+							"$ref": "https://json-schema.org/draft/2020-12/meta/validation#/properties/const"
+						},
+						{ "type": "string" }
+					]
 				},
+				"enum": {
+					"allOf": [
+						{
+							"$ref": "https://json-schema.org/draft/2020-12/meta/validation#/properties/enum"
+						},
+						{
+							"type": "array",
+							"items": { "type": "string" }
+						}
+					]
+				},
+				"minLength": {
+					"$ref": "https://json-schema.org/draft/2020-12/meta/validation#/properties/minLength"
+				},
+				"maxLength": {
+					"$ref": "https://json-schema.org/draft/2020-12/meta/validation#/properties/maxLength"
+				},
+				"pattern": {
+					"$ref": "https://json-schema.org/draft/2020-12/meta/validation#/properties/pattern"
+				}
+			}
+		},
+		"text-data": {
+			"title": "テキストファイル定義",
+			"description": "ファイル内容(文字列)に対する制約。行数系プロパティ(`lines` / `minLines` / `maxLines`)以外のプロパティは `string-schema` に従います(完全一致は `const`、前方一致や正規表現は `pattern`)。複数指定した場合はすべてを満たす必要があります(AND)。行数の数え方: 改行は LF・CRLF・CR のいずれも1つの行終端として扱い、末尾の行終端の後ろに空行は生じない(`a\\nb\\n` も `a\\nb` も2行)。空ファイルは0行",
+			"type": "object",
+			"x-extension": true,
+			"properties": {
 				"lines": {
 					"type": "integer",
 					"minimum": 0,
@@ -78,19 +210,25 @@
 			},
 			"allOf": [{ "$ref": "#/$defs/string-schema" }]
 		},
+		"tabular-data": {
+			"title": "表形式ファイル定義",
+			"description": "CSV / TSV などの表形式データに対する制約。`dialect`(読み取り設定)と `schema`(Table Schema)は Frictionless の Data Resource の同名プロパティをそのまま参照する(`schema` は Frictionless と同じく Table Schema のオブジェクト、またはその参照を表す文字列)。いずれも Frictionless 由来のため拡張プロパティではない",
+			"type": "object",
+			"properties": {
+				"dialect": {
+					"$ref": "https://datapackage.org/profiles/2.0/dataresource.json#/properties/dialect"
+				},
+				"schema": {
+					"$ref": "https://datapackage.org/profiles/2.0/dataresource.json#/properties/schema"
+				}
+			}
+		},
 		"binary-data": {
 			"title": "バイナリファイル定義",
-			"description": "画像やアーカイブなどのバイナリファイルに対する検証ルール",
+			"description": "画像やアーカイブなどのバイナリファイルに対する検証ルール。MIMEタイプは `mediatype`(Frictionless 準拠)で指定する。ツール側で拡張子検証や、既知のマジックバイト検証のヒントとして利用可能",
 			"type": "object",
-			"unevaluatedProperties": false,
 			"x-extension": true,
 			"properties": {
-				"schema": { "const": "binary" },
-				"contentMediaType": {
-					"type": "string",
-					"title": "MIMEタイプ",
-					"description": "期待するファイルのMIMEタイプ(例: image/png)。ツール側で拡張子検証や、既知のマジックバイト検証のヒントとして利用可能"
-				},
 				"magic-bytes": {
 					"type": "string",
 					"pattern": "^[0-9a-fA-F]{2}( [0-9a-fA-F]{2})*$",
@@ -100,7 +238,7 @@
 			}
 		},
 		"json-data-body": {
-			"$comment": "json-data と yaml-data が共有するプロパティ定義。json-data を直接 $ref すると schema の const: json が yaml と衝突するため、schema を除いた本体をここに切り出している。",
+			"$comment": "json-data と yaml-data が共有するプロパティ定義。",
 			"title": "JSON / YAML 共通のデータ制約",
 			"description": "パース後のデータに対する制約。`const-properties` / `contains-properties` はトップレベルがオブジェクトの場合のプロパティに対する制約、`json-schema` はデータ全体に対する JSON Schema。トップレベルが配列などオブジェクト以外のとき(YAML のマルチドキュメントを含む)は `json-schema` を使う",
 			"type": "object",
@@ -127,30 +265,14 @@
 			"title": "JSONファイル定義",
 			"description": "JSONファイルの内容に対する制約。指定できるプロパティは `json-data-body` を参照",
 			"type": "object",
-			"unevaluatedProperties": false,
 			"x-extension": true,
-			"properties": {
-				"schema": {
-					"title": "スキーマ種別 (JSON)",
-					"description": "JSONデータとしての検証を指定",
-					"const": "json"
-				}
-			},
 			"allOf": [{ "$ref": "#/$defs/json-data-body" }]
 		},
 		"yaml-data": {
 			"title": "YAMLファイル定義",
 			"description": "YAMLファイルの内容に対する制約。パース後のデータを JSON と同じデータモデルとして扱い、指定できるプロパティは `json-data` と同じ(`json-data-body`)。YAML を読み込んだ結果がマルチドキュメントストリーム(`---` 区切りの複数ドキュメント)ならば、各ドキュメントを要素とする JSON 配列として扱う。そうでなければ単一ドキュメントをそのまま解釈する(最外がオブジェクトの場合もあり、単一ドキュメントがトップレベルの配列である場合は配列そのもの)。【検証スキーマの指定】YAML 内の `# yaml-language-server: $schema=/path/to/stream.schema.json` 形式のディレクティブによる検証スキーマ指定は、データの `$schema` プロパティに設定されたものとして扱う。同様の意味を持つ一般的なディレクティブ(`yaml-language-server` と `$schema`)は自動で相互に変換し、併用も可能。ただし両者の指定が衝突した場合は error を返す",
 			"type": "object",
-			"unevaluatedProperties": false,
 			"x-extension": true,
-			"properties": {
-				"schema": {
-					"title": "スキーマ種別 (YAML)",
-					"description": "YAMLデータとしての検証を指定",
-					"const": "yaml"
-				}
-			},
 			"allOf": [{ "$ref": "#/$defs/json-data-body" }]
 		}
 	}
