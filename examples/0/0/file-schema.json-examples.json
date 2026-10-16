@@ -1,0 +1,792 @@
+{
+	"$schema": "./schema/file-schema.json-examples.schema.json",
+	"jsons": [
+		{
+			"group": "basic",
+			"groupPointer": "/$defs/fileData",
+			"label": "正常: テキストファイルの行数と内容の制約",
+			"valid": true,
+			"instance": {
+				"format": "text",
+				"encoding": "utf-8",
+				"minLines": 1,
+				"maxLines": 100,
+				"pattern": "^#"
+			}
+		},
+		{
+			"group": "basic",
+			"groupPointer": "/$defs/fileData",
+			"label": "正常: JSONファイルの内容を JSON Schema と部分一致で検証",
+			"valid": true,
+			"instance": {
+				"format": "json",
+				"mediatype": "application/json",
+				"containsProperties": {
+					"name": "example"
+				},
+				"jsonSchema": {
+					"type": "object",
+					"required": [
+						"name"
+					]
+				}
+			}
+		},
+		{
+			"group": "basic",
+			"groupPointer": "/$defs/fileData",
+			"label": "正常: PNG画像のマジックバイト",
+			"valid": true,
+			"instance": {
+				"mediatype": "image/png",
+				"magicBytes": "89 50 4e 47 0d 0a 1a 0a"
+			}
+		},
+		{
+			"group": "basic",
+			"groupPointer": "/$defs/fileData",
+			"label": "正常: CSVの読み取り設定と Table Schema",
+			"valid": true,
+			"instance": {
+				"format": "csv",
+				"dialect": {
+					"delimiter": ","
+				},
+				"schema": {
+					"fields": [
+						{
+							"name": "id",
+							"type": "integer"
+						},
+						{
+							"name": "name",
+							"type": "string"
+						}
+					]
+				}
+			}
+		},
+		{
+			"group": "property:root",
+			"label": "正常: 空オブジェクト(全プロパティ任意)",
+			"valid": true,
+			"instance": {}
+		},
+		{
+			"group": "property:root",
+			"label": "オブジェクト以外は不可",
+			"valid": false,
+			"instance": "text",
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property:root",
+			"label": "種別に該当しない場合、format / mediatype / encoding 以外は不可",
+			"valid": false,
+			"instance": {
+				"minLines": 1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "unevaluatedProperties"
+				}
+			]
+		},
+		{
+			"group": "property:root",
+			"label": "正常: 種別に該当しない format でも format 自体は指定できる",
+			"valid": true,
+			"instance": {
+				"format": "xlsx"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"pointer": "/encoding",
+			"label": "正常: format と encoding のみ",
+			"valid": true,
+			"instance": {
+				"format": "text",
+				"encoding": "shift_jis"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"pointer": "/encoding",
+			"label": "encoding は文字列でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"encoding": 1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/encoding",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"pointer": "/format",
+			"label": "format は文字列でなければならない",
+			"valid": false,
+			"instance": {
+				"format": 1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/format",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"pointer": "/mediatype",
+			"label": "mediatype は 'type/subtype' 形式でなければならない",
+			"valid": false,
+			"instance": {
+				"mediatype": "png"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/mediatype",
+					"keyword": "pattern"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"label": "正常: mediatype のみ指定してもテキスト種別と判定される(charset 付き)",
+			"valid": true,
+			"instance": {
+				"mediatype": "text/plain; charset=utf-8",
+				"maxLines": 10
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"pointer": "/format",
+			"label": "format は小文字でなければならない(大文字不可)",
+			"valid": false,
+			"instance": {
+				"format": "TEXT"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/format",
+					"keyword": "pattern"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/fileData",
+			"pointer": "/mediatype",
+			"label": "mediatype は小文字でなければならない(大文字不可)",
+			"valid": false,
+			"instance": {
+				"mediatype": "Text/Plain"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/mediatype",
+					"keyword": "pattern"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"pointer": "/lines",
+			"label": "正常: format 'txt' でもテキスト種別",
+			"valid": true,
+			"instance": {
+				"format": "txt",
+				"lines": 3
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"label": "正常: mediatype 'text/markdown' はテキスト種別",
+			"valid": true,
+			"instance": {
+				"mediatype": "text/markdown",
+				"minLines": 1
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"label": "正常: const で完全一致",
+			"valid": true,
+			"instance": {
+				"format": "text",
+				"const": "hello\n"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"label": "正常: enum と minLength / maxLength",
+			"valid": true,
+			"instance": {
+				"format": "text",
+				"enum": [
+					"a",
+					"b"
+				],
+				"minLength": 1,
+				"maxLength": 1
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"pointer": "/lines",
+			"label": "lines は整数でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"lines": 1.5
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/lines",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"pointer": "/minLines",
+			"label": "minLines は 0 以上でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"minLines": -1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/minLines",
+					"keyword": "minimum"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"pointer": "/maxLines",
+			"label": "maxLines は 0 以上でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"maxLines": -1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/maxLines",
+					"keyword": "minimum"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/stringSchema",
+			"pointer": "/const",
+			"label": "const は文字列でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"const": 1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/const",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/stringSchema",
+			"pointer": "/enum",
+			"label": "enum の要素は文字列でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"enum": [
+					"a",
+					1
+				]
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/enum/1",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/stringSchema",
+			"pointer": "/minLength",
+			"label": "minLength は 0 以上の整数でなければならない",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"minLength": -1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/minLength",
+					"keyword": "minimum"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/stringSchema",
+			"pointer": "/pattern",
+			"label": "pattern が不正な正規表現: format 未評価では可、format 評価時は不可",
+			"valid": true,
+			"valid@when_format-assertion": false,
+			"instance": {
+				"format": "text",
+				"pattern": "("
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/textData",
+			"label": "テキスト種別で magicBytes は不可",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"magicBytes": "89 50"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "unevaluatedProperties"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesText",
+			"label": "正常: 表形式(text/csv)でもテキストの制約(minLines)が使える",
+			"valid": true,
+			"instance": {
+				"mediatype": "text/csv",
+				"minLines": 1
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesText",
+			"label": "正常: YAML(text/yaml)でもテキストの制約(minLines)が使える",
+			"valid": true,
+			"instance": {
+				"mediatype": "text/yaml",
+				"minLines": 1
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/jsonData",
+			"label": "正常: format 'json' の constProperties",
+			"valid": true,
+			"instance": {
+				"format": "json",
+				"constProperties": {
+					"version": 1
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesJson",
+			"label": "正常: mediatype 'application/geo+json' も JSON 種別",
+			"valid": true,
+			"instance": {
+				"mediatype": "application/geo+json",
+				"containsProperties": {
+					"type": "FeatureCollection"
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/jsonData",
+			"label": "正常: JSON 種別でもテキスト用の pattern が使える",
+			"valid": true,
+			"instance": {
+				"format": "json",
+				"pattern": "^\\{"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/jsonDataBody",
+			"pointer": "/constProperties",
+			"label": "constProperties はオブジェクトでなければならない",
+			"valid": false,
+			"instance": {
+				"format": "json",
+				"constProperties": [
+					1
+				]
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/constProperties",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/jsonDataBody",
+			"pointer": "/containsProperties",
+			"label": "containsProperties はオブジェクトでなければならない",
+			"valid": false,
+			"instance": {
+				"format": "json",
+				"containsProperties": "a"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/containsProperties",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/jsonDataBody",
+			"pointer": "/jsonSchema",
+			"label": "jsonSchema は JSON Schema でなければならない(type に不正な値)",
+			"valid": false,
+			"instance": {
+				"format": "json",
+				"jsonSchema": {
+					"type": "unknown"
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/jsonDataBody",
+			"pointer": "/jsonSchema",
+			"label": "正常: jsonSchema に真偽値スキーマを指定",
+			"valid": true,
+			"instance": {
+				"format": "json",
+				"jsonSchema": true
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/yamlData",
+			"label": "正常: format 'yml' は YAML 種別",
+			"valid": true,
+			"instance": {
+				"format": "yml",
+				"containsProperties": {
+					"kind": "Config"
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/yamlData",
+			"label": "正常: mediatype 'application/x-yaml' は YAML 種別",
+			"valid": true,
+			"instance": {
+				"mediatype": "application/x-yaml",
+				"jsonSchema": {
+					"type": "array"
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesYaml",
+			"label": "正常: mediatype 'text/yaml' は YAML 種別(テキスト種別ではない)",
+			"valid": true,
+			"instance": {
+				"mediatype": "text/yaml",
+				"constProperties": {}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/yamlData",
+			"label": "正常: YAML 種別でも minLines が使える",
+			"valid": true,
+			"instance": {
+				"format": "yaml",
+				"minLines": 1
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/tabularData",
+			"label": "正常: format 'tsv' は表形式種別",
+			"valid": true,
+			"instance": {
+				"format": "tsv",
+				"dialect": {
+					"delimiter": "\t"
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesTabular",
+			"label": "正常: mediatype 'text/csv' は表形式種別",
+			"valid": true,
+			"instance": {
+				"mediatype": "text/csv",
+				"schema": {
+					"fields": [
+						{
+							"name": "a"
+						}
+					]
+				}
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/tabularData",
+			"label": "正常: 表形式種別でも lines が使える",
+			"valid": true,
+			"instance": {
+				"format": "csv",
+				"lines": 3
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/tabularData",
+			"pointer": "/dialect",
+			"label": "dialect はオブジェクトでなければならない",
+			"valid": false,
+			"instance": {
+				"format": "csv",
+				"dialect": "comma"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/dialect",
+					"keyword": "type"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/binaryData",
+			"label": "正常: format 'binary' と magicBytes",
+			"valid": true,
+			"instance": {
+				"format": "binary",
+				"magicBytes": "50 4b 03 04"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesBinary",
+			"label": "正常: mediatype 'application/zip' はバイナリ種別",
+			"valid": true,
+			"instance": {
+				"mediatype": "application/zip",
+				"magicBytes": "50 4b 03 04"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesBinary",
+			"label": "正常: 'image/svg+xml' はバイナリ種別ではないが format: binary で明示できる",
+			"valid": true,
+			"instance": {
+				"format": "binary",
+				"mediatype": "image/svg+xml"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/appliesBinary",
+			"label": "'image/svg+xml' のみではバイナリ種別でない(magicBytes は不可)",
+			"valid": false,
+			"instance": {
+				"mediatype": "image/svg+xml",
+				"magicBytes": "3c 73 76 67"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "unevaluatedProperties"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/binaryData",
+			"pointer": "/encoding",
+			"label": "バイナリ種別で encoding は不可",
+			"valid": false,
+			"instance": {
+				"format": "binary",
+				"encoding": "utf-8"
+			}
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/binaryData",
+			"pointer": "/magicBytes",
+			"label": "magicBytes は2桁16進数のスペース区切りでなければならない(区切りなし)",
+			"valid": false,
+			"instance": {
+				"format": "binary",
+				"magicBytes": "89504e47"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/magicBytes",
+					"keyword": "pattern"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/binaryData",
+			"pointer": "/magicBytes",
+			"label": "magicBytes に16進数以外は不可",
+			"valid": false,
+			"instance": {
+				"format": "binary",
+				"magicBytes": "zz 00"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/magicBytes",
+					"keyword": "pattern"
+				}
+			]
+		},
+		{
+			"group": "property",
+			"groupPointer": "/$defs/binaryData",
+			"label": "バイナリ種別で minLines は不可",
+			"valid": false,
+			"instance": {
+				"format": "binary",
+				"minLines": 1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "unevaluatedProperties"
+				}
+			]
+		},
+		{
+			"group": "property:defs",
+			"groupPointer": "/$defs/fileData",
+			"label": "正常: 複数種別に該当する場合はそれぞれの制約をすべて使える(text AND json)",
+			"valid": true,
+			"instance": {
+				"format": "json",
+				"mediatype": "text/plain",
+				"minLines": 1,
+				"containsProperties": {
+					"a": 1
+				}
+			}
+		},
+		{
+			"group": "property:defs",
+			"groupPointer": "/$defs/fileData",
+			"label": "複数種別に該当しても、どの種別にも属さないプロパティは不可",
+			"valid": false,
+			"instance": {
+				"format": "json",
+				"mediatype": "text/plain",
+				"magicBytes": "00"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "unevaluatedProperties"
+				}
+			]
+		},
+		{
+			"group": "property:defs",
+			"groupPointer": "/$defs/fileData",
+			"label": "複数種別の制約は AND(text の制約を満たさなければ不可)",
+			"valid": false,
+			"instance": {
+				"format": "json",
+				"mediatype": "text/plain",
+				"minLines": -1
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "/minLines",
+					"keyword": "minimum"
+				}
+			]
+		},
+		{
+			"group": "property:defs",
+			"groupPointer": "/$defs/fileData",
+			"label": "format がテキスト系で mediatype がバイナリの組み合わせは不可",
+			"valid": false,
+			"instance": {
+				"format": "text",
+				"mediatype": "image/png"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "not"
+				}
+			]
+		},
+		{
+			"group": "property:defs",
+			"groupPointer": "/$defs/fileData",
+			"label": "format がバイナリで mediatype が JSON の組み合わせは不可",
+			"valid": false,
+			"instance": {
+				"format": "binary",
+				"mediatype": "application/json"
+			},
+			"expectedErrors": [
+				{
+					"instanceLocation": "",
+					"keyword": "not"
+				}
+			]
+		}
+	]
+}
