@@ -1,5 +1,5 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$schema": "https://raw.githubusercontent.com/rin00159/jsonschema-extends-expansion/refs/heads/main/schema/0.0.0/2020-12/ide/extends.schema.json",
 	"$comment": "【方針】プロパティ名と意味は Frictionless Data (Data Resource v2) に準拠する。ファイル内容の検証に関係する format / mediatype / encoding / dialect / schema は Frictionless 側の定義を $ref で参照し、Frictionless に存在しないプロパティだけを拡張プロパティ(x-extension: true)として追加する。name / path / data / bytes / hash などはファイルノード側(directory.schema.json の common)が持つ情報と重複するため含めない。【x-extension】x-extension: true を持つスキーマの内側のプロパティが拡張プロパティ。$ref を介した参照先には効かないため、参照先のスキーマ自身に付けている。Frictionless 由来のプロパティ(format / mediatype / encoding / dialect / schema)を持つスキーマには付けない。【format の拡張値】Frictionless の format は任意の文字列(csv / xls / json などの例示のみ)で、テキスト・バイナリを表す指定は存在しない。そのため `text`(`txt`)と `binary` は本スキーマ独自の値(拡張)として扱う。【参照先】Frictionless 側のスキーマは https://datapackage.org/profiles/2.0/dataresource.json の properties を JSON Pointer で参照する(ローカルに置いたコピーに差し替えてもよい)。Frictionless の profile は draft-07 のため、検証ツールでは異なる方言の混在を許可する設定が必要になる。",
 	"title": "ファイルデータ",
 	"description": "ファイルの内容や形式に対する検証ルール。`format` または `mediatype` が明示されている場合は、その種別に対応する制約プロパティが使えるように分岐する。詳細は `file-data` を参照",
