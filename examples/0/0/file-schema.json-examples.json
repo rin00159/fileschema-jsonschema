@@ -27,9 +27,7 @@
 				},
 				"jsonSchema": {
 					"type": "object",
-					"required": [
-						"name"
-					]
+					"required": ["name"]
 				}
 			}
 		},
@@ -247,10 +245,7 @@
 			"valid": true,
 			"instance": {
 				"format": "text",
-				"enum": [
-					"a",
-					"b"
-				],
+				"enum": ["a", "b"],
 				"minLength": 1,
 				"maxLength": 1
 			}
@@ -331,10 +326,7 @@
 			"valid": false,
 			"instance": {
 				"format": "text",
-				"enum": [
-					"a",
-					1
-				]
+				"enum": ["a", 1]
 			},
 			"expectedErrors": [
 				{
@@ -366,7 +358,7 @@
 			"pointer": "/pattern",
 			"label": "pattern が不正な正規表現: format 未評価では可、format 評価時は不可",
 			"valid": true,
-			"valid@when_format-assertion": false,
+			"valid@when_formatAssertion": false,
 			"instance": {
 				"format": "text",
 				"pattern": "("
@@ -450,9 +442,7 @@
 			"valid": false,
 			"instance": {
 				"format": "json",
-				"constProperties": [
-					1
-				]
+				"constProperties": [1]
 			},
 			"expectedErrors": [
 				{
